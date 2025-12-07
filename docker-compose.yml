@@ -67,6 +67,32 @@ services:
   # Microservices
   # ===================================
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: docqa-api-gateway
+    environment:
+      - DOC_INGESTOR_URL=http://doc-ingestor:8000
+      - DEID_URL=http://deid:8000
+      - INDEXEUR_SEMANTIQUE_URL=http://indexeur-semantique:8000
+      - LLM_QA_URL=http://llm-qa-module:8000
+      - SYNTHESE_COMPARATIVE_URL=http://synthese-comparative:8000
+      - AUDIT_LOGGER_URL=http://audit-logger:8000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/api-gateway/app:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
   doc-ingestor:
     build:
       context: ./services/doc-ingestor
