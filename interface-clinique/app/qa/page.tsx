@@ -65,10 +65,10 @@ export default function QAPage() {
         <DashboardLayout>
             <div className="max-w-5xl mx-auto">
                 {/* Header - UPGRADED */}
-                <div className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-600 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-purple-500/20 mb-6">
+                <div className="relative bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-teal-500/20 mb-6">
                     {/* Animated Background */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl"></div>
 
                     <div className="relative z-10">
                         <div className="flex items-center space-x-4">
@@ -100,7 +100,7 @@ export default function QAPage() {
                                 >
                                     <div className="flex items-start space-x-3">
                                         {message.role === 'assistant' && (
-                                            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
                                                 <Sparkles className="h-4 w-4 text-white" />
                                             </div>
                                         )}
@@ -149,13 +149,13 @@ export default function QAPage() {
                             <div className="flex justify-start">
                                 <div className="bg-gray-100 rounded-2xl p-4 max-w-3xl">
                                     <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
                                             <Sparkles className="h-4 w-4 text-white animate-pulse" />
                                         </div>
                                         <div className="flex space-x-2">
-                                            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"></div>
-                                            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                                            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -189,9 +189,9 @@ export default function QAPage() {
                 </div>
 
                 {/* Tips */}
-                <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-100">
+                <div className="mt-6 bg-gradient-to-r from-teal-50 to-teal-100 rounded-xl p-6 border border-teal-100">
                     <div className="flex items-start space-x-3">
-                        <Target className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <Target className="h-5 w-5 text-teal-600 mt-0.5" />
                         <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Example Questions:</h3>
                             <ul className="space-y-1 text-sm text-gray-600">

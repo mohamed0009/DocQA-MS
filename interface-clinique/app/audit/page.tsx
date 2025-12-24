@@ -40,10 +40,10 @@ export default function AuditPage() {
         <DashboardLayout>
             <div className="space-y-6">
                 {/* Header - UPGRADED */}
-                <div className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-600 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-red-500/20">
+                <div className="relative bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-teal-500/20">
                     {/* Animated Background */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl"></div>
 
                     <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -53,7 +53,7 @@ export default function AuditPage() {
                                 </div>
                                 <div>
                                     <h1 className="text-4xl font-bold mb-1">Audit Logs</h1>
-                                    <p className="text-red-100 text-lg">Security and compliance audit trail (HIPAA/GDPR)</p>
+                                    <p className="text-teal-100 text-lg">Security and compliance audit trail (HIPAA/GDPR)</p>
                                 </div>
                             </div>
                             <div className="flex space-x-2">

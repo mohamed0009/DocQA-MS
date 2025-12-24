@@ -84,8 +84,8 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8000:8000"
-    volumes:
-      - ./services/api-gateway/app:/app
+    # volumes:
+      # - ./services/api-gateway/app:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -112,7 +112,7 @@ services:
       - "8001:8000"
     volumes:
       - document_storage:/data/documents
-      - ./services/doc-ingestor/app:/app
+      # - ./services/doc-ingestor/app:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,14 +133,17 @@ services:
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
       - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
       - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
-      - DEID_STRATEGY=${DEID_STRATEGY:-redact}
+      - DEID_STRATEGY=${DEID_STRATEGY:-synthesize}
       - DEID_CONFIDENCE_THRESHOLD=${DEID_CONFIDENCE_THRESHOLD:-0.85}
-      - SPACY_MODEL=${SPACY_MODEL:-en_core_web_sm}
+      - PRESERVE_MEDICAL_ENTITIES=${PRESERVE_MEDICAL_ENTITIES:-true}
+      - SPACY_MODEL=${SPACY_MODEL:-en_core_web_lg}
+      - PRESIDIO_CONFIDENCE_THRESHOLD=${PRESIDIO_CONFIDENCE_THRESHOLD:-0.85}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8002:8000"
-    # volumes:
-    #   - ./services/deid/app:/app
+    volumes:
+      - spacy_cache:/root/.spacy
+      # - ./services/deid/app:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,15 +164,20 @@ services:
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
       - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
       - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-sentence-transformers}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
-      - EMBEDDING_DEVICE=${EMBEDDING_DEVICE:-cpu}
+      - EMBEDDING_DEVICE=${EMBEDDING_DEVICE:-cuda}
+      - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-384}
+      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-32}
       - FAISS_INDEX_TYPE=${FAISS_INDEX_TYPE:-IndexFlatL2}
       - FAISS_INDEX_PATH=${FAISS_INDEX_PATH:-/data/faiss_indices}
+      - FAISS_USE_GPU=${FAISS_USE_GPU:-true}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8003:8000"
     volumes:
       - faiss_indices:/data/faiss_indices
+      - embedding_cache:/root/.cache
       # - ./services/indexeur-semantique/app:/app
     depends_on:
       postgres:
@@ -180,13 +188,13 @@ services:
       - docqa-network
     restart: unless-stopped
     # Uncomment for GPU support
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   llm-qa-module:
     build:
@@ -195,27 +203,37 @@ services:
     container_name: docqa-llm-qa
     environment:
       - DATABASE_URL=${LLM_QA_DB_URL}
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.3}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-1024}
+      - LLM_CONTEXT_LENGTH=${LLM_CONTEXT_LENGTH:-4096}
+      - LLM_REQUEST_TIMEOUT=${LLM_REQUEST_TIMEOUT:-60}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4-turbo-preview}
-      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.3}
-      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-2048}
-      - LOCAL_LLM_MODEL_PATH=${LOCAL_LLM_MODEL_PATH:-/models/llama-2-70b}
+      - ENABLE_LLM_FALLBACK=${ENABLE_LLM_FALLBACK:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOCAL_LLM_MODEL_PATH=${LOCAL_LLM_MODEL_PATH:-/models/llama-2-70b.gguf}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-llama2:70b}
       - LOCAL_LLM_DEVICE=${LOCAL_LLM_DEVICE:-cuda}
       - ENABLE_STREAMING_RESPONSES=${ENABLE_STREAMING_RESPONSES:-true}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8004:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      # - ./services/llm-qa-module/app:/app
+      - llm_cache:/root/.cache
       - llm_models:/models
+      # - ./services/llm-qa-module/app:/app
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - docqa-network
     restart: unless-stopped
-    # Uncomment for GPU support
+    # Uncomment for GPU support with local models
     # deploy:
     #   resources:
     #     reservations:
@@ -328,6 +346,12 @@ volumes:
   faiss_indices:
     driver: local
   llm_models:
+    driver: local
+  llm_cache:
+    driver: local
+  embedding_cache:
+    driver: local
+  spacy_cache:
     driver: local
   audit_logs:
     driver: local

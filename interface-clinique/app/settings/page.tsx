@@ -8,10 +8,10 @@ export default function SettingsPage() {
         <DashboardLayout>
             <div className="space-y-6 max-w-4xl mx-auto">
                 {/* Header - UPGRADED */}
-                <div className="relative bg-gradient-to-br from-slate-600 via-gray-700 to-slate-600 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-slate-500/20">
+                <div className="relative bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-teal-500/20">
                     {/* Animated Background */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-gray-500/20 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl"></div>
 
                     <div className="relative z-10">
                         <div className="flex items-center space-x-4">

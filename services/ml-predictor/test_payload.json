@@ -1,0 +1,48 @@
+{
+    "patient_features": {
+        "patient_id": "DEMO001",
+        "age": 72,
+        "gender": "M",
+        "bmi": 31.2,
+        "diagnoses": [
+            "I50.9",
+            "E11.9",
+            "I10",
+            "N18.3"
+        ],
+        "primary_diagnosis": "I50.9",
+        "medications": [
+            "metformin",
+            "lisinopril",
+            "atorvastatin",
+            "furosemide",
+            "carvedilol"
+        ],
+        "lab_values": {
+            "glucose": 165,
+            "creatinine": 1.8,
+            "hemoglobin": 11.2,
+            "wbc": 8.5,
+            "sodium": 138,
+            "potassium": 4.2,
+            "bun": 28
+        },
+        "vital_signs": {
+            "bp_systolic": 152,
+            "bp_diastolic": 95,
+            "heart_rate": 88,
+            "respiratory_rate": 18,
+            "temperature": 98.4,
+            "oxygen_saturation": 94
+        },
+        "admission_history": {
+            "los": 7,
+            "icu_stay": true,
+            "admissions_last_year": 3,
+            "days_since_last_admission": 45
+        },
+        "clinical_notes": "72-year-old male with history of congestive heart failure, type 2 diabetes, hypertension, and chronic kidney disease. Patient presents with worsening shortness of breath and lower extremity edema. Recent ICU admission for acute decompensated heart failure. Currently on multiple medications including diuretics and beta-blockers."
+    },
+    "model_type": "readmission",
+    "explain": true
+}

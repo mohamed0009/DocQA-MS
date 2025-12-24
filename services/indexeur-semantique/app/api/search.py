@@ -17,7 +17,7 @@ from ..schemas.search import (
     SearchResponse,
     IndexStatsResponse
 )
-from ..services import get_chunker, get_faiss_manager
+from ..services import get_chunker, get_faiss_manager, get_bm25_manager, get_hybrid_search_service
 from ..embeddings import get_embedding_generator
 from ..config import settings
 
@@ -45,6 +45,7 @@ async def index_document(
         chunker = get_chunker()
         embedding_generator = get_embedding_generator()
         faiss_manager = get_faiss_manager()
+        bm25_manager = get_bm25_manager()
         
         # Chunk the text
         chunks = chunker.chunk_text(request.text, request.chunking_strategy)
@@ -87,6 +88,9 @@ async def index_document(
         
         # Add to FAISS index
         faiss_ids = faiss_manager.add_vectors(embeddings, chunk_metadata)
+        
+        # Add to BM25 index
+        bm25_manager.add_documents(chunk_texts, chunk_metadata)
         
         # Update FAISS IDs in database
         for chunk_id, faiss_id in zip(chunk_ids, faiss_ids):
@@ -142,34 +146,91 @@ async def search(
         # Get services
         embedding_generator = get_embedding_generator()
         faiss_manager = get_faiss_manager()
+        bm25_manager = get_bm25_manager()
+        hybrid_service = get_hybrid_search_service()
         
-        # Generate query embedding
-        embedding_start = time.time()
-        query_embedding = embedding_generator.generate_embedding(request.query)
-        embedding_time_ms = int((time.time() - embedding_start) * 1000)
+        search_mode = request.search_mode or "hybrid"
+        embedding_time_ms = 0
+        fusion_strategy = request.fusion_strategy
         
-        # Search FAISS
-        faiss_results = faiss_manager.search(
-            query_embedding,
-            top_k=request.top_k
-        )
-        
-        # Filter by threshold
-        filtered_results = [
-            r for r in faiss_results
-            if r["similarity"] >= request.similarity_threshold
-        ]
+        # Perform search based on mode
+        if search_mode == "semantic":
+            # Pure semantic search
+            embedding_start = time.time()
+            query_embedding = embedding_generator.generate_embedding(request.query)
+            embedding_time_ms = int((time.time() - embedding_start) * 1000)
+            
+            faiss_results = faiss_manager.search(
+                query_embedding,
+                top_k=request.top_k
+            )
+            
+            # Filter by threshold
+            filtered_results = [
+                r for r in faiss_results
+                if r["similarity"] >= request.similarity_threshold
+            ]
+            
+            raw_results = filtered_results
+            
+        elif search_mode == "lexical":
+            # Pure BM25 search
+            bm25_results = bm25_manager.search(
+                request.query,
+                top_k=request.top_k
+            )
+            raw_results = bm25_results
+            
+        elif search_mode == "hybrid":
+            # Hybrid search
+            embedding_start = time.time()
+            query_embedding = embedding_generator.generate_embedding(request.query)
+            embedding_time_ms = int((time.time() - embedding_start) * 1000)
+            
+            # Get semantic results
+            semantic_results = faiss_manager.search(
+                query_embedding,
+                top_k=request.top_k * 2  # Get more for fusion
+            )
+            semantic_results = [
+                r for r in semantic_results
+                if r["similarity"] >= request.similarity_threshold
+            ]
+            
+            # Get lexical results
+            lexical_results = bm25_manager.search(
+                request.query,
+                top_k=request.top_k * 2  # Get more for fusion
+            )
+            
+            # Combine using hybrid search service
+            raw_results = hybrid_service.hybrid_search(
+                semantic_results=semantic_results,
+                lexical_results=lexical_results,
+                fusion_strategy=fusion_strategy,
+                top_k=request.top_k,
+                semantic_weight=request.semantic_weight,
+                lexical_weight=request.lexical_weight
+            )
+            
+            fusion_strategy = fusion_strategy or settings.HYBRID_SEARCH_MODE
+            
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid search_mode: {search_mode}. Must be 'semantic', 'lexical', or 'hybrid'"
+            )
         
         # Format results
         results = []
-        for result in filtered_results:
+        for result in raw_results:
             results.append(SearchResult(
                 chunk_id=result["chunk_id"],
                 document_id=result["document_id"],
                 chunk_text=result["chunk_text"],
-                similarity=result["similarity"],
+                similarity=result.get("similarity", result.get("hybrid_score", result.get("bm25_score", 0))),
                 chunk_index=result.get("chunk_index", 0),
-                metadata={}
+                metadata=result.get("metadata", {})
             ))
         
         search_time_ms = int((time.time() - start_time) * 1000)
@@ -199,6 +260,7 @@ async def search(
         logger.info(
             "Search completed",
             query=request.query,
+            search_mode=search_mode,
             results_found=len(results),
             search_time_ms=search_time_ms
         )
@@ -208,7 +270,9 @@ async def search(
             results=results,
             results_count=len(results),
             search_time_ms=search_time_ms,
-            embedding_time_ms=embedding_time_ms
+            embedding_time_ms=embedding_time_ms,
+            search_mode=search_mode,
+            fusion_strategy=fusion_strategy
         )
         
     except Exception as e:
@@ -252,6 +316,10 @@ async def delete_document(document_id: str, db: Session = Depends(get_db)):
     """Delete all chunks for a document"""
     
     try:
+        # Delete from BM25 index
+        bm25_manager = get_bm25_manager()
+        bm25_manager.delete_by_document_id(document_id)
+        
         # Delete from database
         deleted = db.query(DocumentChunk).filter(
             DocumentChunk.document_id == document_id

@@ -25,17 +25,30 @@ class Settings(BaseSettings):
     RABBITMQ_CONSUME_QUEUE: str = "indexed_documents"
     
     # LLM Configuration
-    LLM_PROVIDER: str = "openai"  # openai, huggingface, local
+    LLM_PROVIDER: str = "ollama"  # ollama, openai, anthropic, local
     
-    # OpenAI Configuration
+    # Ollama Configuration
+    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
+    OLLAMA_MODEL: str = "mistral"
+    LLM_TEMPERATURE: float = 0.3
+    LLM_MAX_TOKENS: int = 1024
+    LLM_CONTEXT_LENGTH: int = 4096
+    LLM_REQUEST_TIMEOUT: int = 60
+    
+    # OpenAI Configuration (Fallback or Primary)
     OPENAI_API_KEY: Optional[str] = None
-    OPENAI_MODEL: str = "gpt-4-turbo-preview"  # gpt-4, gpt-3.5-turbo
-    OPENAI_TEMPERATURE: float = 0.7
-    OPENAI_MAX_TOKENS: int = 2000
+    OPENAI_MODEL: str = "gpt-4-turbo-preview"
+    ENABLE_LLM_FALLBACK: bool = False
     
-    # HuggingFace / Local LLM Configuration
+    # Anthropic Configuration
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-sonnet-20240229"
+    
+    # HuggingFace / Local LLM Configuration (legacy)
     LOCAL_MODEL_NAME: str = "meta-llama/Llama-2-7b-chat-hf"
-    LOCAL_MODEL_DEVICE: str = "cpu"  # cpu or cuda
+    LOCAL_MODEL_PATH: str = "/models/llama-2-70b.gguf"
+    LOCAL_MODEL_DEVICE: str = "cuda"  # cpu or cuda
+    LOCAL_LLM_GPU_LAYERS: int = 35
     HF_TOKEN: Optional[str] = None
     
     # RAG Configuration

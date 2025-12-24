@@ -103,10 +103,10 @@ export default function DocumentsPage() {
         <DashboardLayout>
             <div className="space-y-6">
                 {/* Header Section - UPGRADED */}
-                <div className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-blue-600 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-purple-500/20">
+                <div className="relative bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 rounded-3xl p-8 text-white shadow-2xl overflow-hidden border border-teal-500/20">
                     {/* Animated Background */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl"></div>
 
                     <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ export default function DocumentsPage() {
                                 </div>
                                 <div>
                                     <h1 className="text-4xl font-bold mb-1">Documents</h1>
-                                    <p className="text-purple-100 text-lg">Manage and process medical documents</p>
+                                    <p className="text-teal-100 text-lg">Manage and process medical documents</p>
                                 </div>
                             </div>
                             <button
@@ -149,8 +149,8 @@ export default function DocumentsPage() {
                 {/* Upload Area - UPGRADED */}
                 <div
                     className={`relative border-2 border-dashed rounded-3xl p-12 text-center transition-all group ${dragActive
-                        ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-blue-50 shadow-xl'
-                        : 'border-gray-300 bg-white hover:border-purple-400 hover:shadow-lg'
+                        ? 'border-teal-600 bg-gradient-to-br from-teal-50 to-teal-100 shadow-xl'
+                        : 'border-gray-300 bg-white hover:border-teal-400 hover:shadow-lg'
                         }`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
@@ -166,18 +166,18 @@ export default function DocumentsPage() {
                     />
                     <label htmlFor="file-upload" className="cursor-pointer">
                         <div className="space-y-6">
-                            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
                                 <Upload className="h-10 w-10 text-white" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900 mb-2">
                                     {dragActive ? '✨ Drop files here' : 'Upload Medical Documents'}
                                 </p>
-                                <p className="text-base text-gray-600">Drag & drop files or <span className="text-purple-600 font-semibold">browse</span> to upload</p>
+                                <p className="text-base text-gray-600">Drag & drop files or <span className="text-teal-600 font-semibold">browse</span> to upload</p>
                             </div>
                             <div className="flex items-center justify-center space-x-8 text-sm">
                                 <div className="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-xl">
-                                    <FileText className="h-5 w-5 text-purple-600" />
+                                    <FileText className="h-5 w-5 text-teal-600" />
                                     <span className="font-medium text-gray-700">PDF, DOCX, HL7, FHIR</span>
                                 </div>
                                 <div className="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-xl">
@@ -189,7 +189,7 @@ export default function DocumentsPage() {
                     {uploading && (
                         <div className="absolute inset-0 bg-white/95 backdrop-blur-md flex items-center justify-center rounded-3xl">
                             <div className="text-center">
-                                <div className="w-20 h-20 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <div className="w-20 h-20 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                                 <p className="text-lg font-semibold text-gray-900">Uploading & Processing...</p>
                                 <p className="text-sm text-gray-600 mt-2">Please wait while we analyze your document</p>
                             </div>

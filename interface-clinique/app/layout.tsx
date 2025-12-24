@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "MedBot Intelligence - Clinical Interface",
   description: "AI-Powered Medical Document Assistant",
+  icons: {
+    icon: [
+      { url: '/logo.png', href: '/logo.png', sizes: 'any' }
+    ]
+  }
 };
 
 export default function RootLayout({

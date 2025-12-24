@@ -29,6 +29,10 @@ class SearchRequest(BaseModel):
     query: str = Field(..., description="Search query")
     top_k: Optional[int] = Field(10, description="Number of results to return")
     similarity_threshold: Optional[float] = Field(0.7, description="Minimum similarity score")
+    search_mode: Optional[str] = Field("hybrid", description="Search mode: semantic, lexical, or hybrid")
+    fusion_strategy: Optional[str] = Field(None, description="Fusion strategy: rrf or weighted (for hybrid mode)")
+    semantic_weight: Optional[float] = Field(None, description="Weight for semantic search (0-1)")
+    lexical_weight: Optional[float] = Field(None, description="Weight for lexical search (0-1)")
 
 
 class SearchResult(BaseModel):
@@ -48,6 +52,8 @@ class SearchResponse(BaseModel):
     results_count: int
     search_time_ms: int
     embedding_time_ms: int
+    search_mode: str
+    fusion_strategy: Optional[str] = None
 
 
 class IndexStatsResponse(BaseModel):

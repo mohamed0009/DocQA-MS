@@ -10,10 +10,13 @@ alembic==1.12.1
 
 # LLM & RAG
 langchain==0.1.0
-langchain-openai==0.0.2
-langchain-community==0.0.10
+langchain-openai==0.0.5
+langchain-anthropic==0.0.2
+langchain-community==0.0.13
 llama-index==0.9.30
 openai==1.6.1
+ollama==0.1.6
+anthropic==0.8.1
 
 # Open Source LLM Support
 transformers==4.35.2
