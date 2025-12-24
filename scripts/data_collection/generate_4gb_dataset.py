@@ -244,12 +244,12 @@ def generate_batch(batch_id, batch_size):
 
 
 def main():
-    """Generate 4GB dataset"""
+    """Generate 2GB dataset"""
     print("="*70)
-    print("ENHANCED 4GB SYNTHETIC DATA GENERATOR")
+    print("ENHANCED 2GB SYNTHETIC DATA GENERATOR")
     print("="*70)
     
-    total_patients = 500000
+    total_patients = 600000  # Increased to reach 2GB
     batch_size = 5000  # Smaller batches due to large text
     n_batches = total_patients // batch_size
     n_workers = min(cpu_count(), 6)
@@ -258,8 +258,8 @@ def main():
     print(f"Batch size: {batch_size:,}")
     print(f"Number of batches: {n_batches}")
     print(f"Using {n_workers} CPU cores")
-    print(f"Target size: ~4 GB")
-    print(f"Estimated time: 5-8 minutes\n")
+    print(f"Target size: ~2 GB")
+    print(f"Estimated time: 6-10 minutes\n")
     
     start_time = datetime.now()
     
