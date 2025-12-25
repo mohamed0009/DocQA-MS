@@ -14,21 +14,21 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "llm-qa-module"
     LOG_LEVEL: str = "INFO"
     
-    # Database
-    DATABASE_URL: str = "postgresql://docqa_admin:changeme@postgres:5432/llm_qa"
+    # Database - Using SQLite for local development
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./llm_qa.db")
     
-    # RabbitMQ
-    RABBITMQ_HOST: str = "rabbitmq"
+    # RabbitMQ (optional for local dev)
+    RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "docqa_rabbitmq"
-    RABBITMQ_PASS: str = "changeme"
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASS: str = "guest"
     RABBITMQ_CONSUME_QUEUE: str = "indexed_documents"
     
     # LLM Configuration
     LLM_PROVIDER: str = "ollama"  # ollama, openai, anthropic, local
     
-    # Ollama Configuration
-    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
+    # Ollama Configuration - Use localhost for local development
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = "mistral"
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 1024
@@ -46,9 +46,9 @@ class Settings(BaseSettings):
     
     # HuggingFace / Local LLM Configuration (legacy)
     LOCAL_MODEL_NAME: str = "meta-llama/Llama-2-7b-chat-hf"
-    LOCAL_MODEL_PATH: str = "/models/llama-2-70b.gguf"
-    LOCAL_MODEL_DEVICE: str = "cuda"  # cpu or cuda
-    LOCAL_LLM_GPU_LAYERS: int = 35
+    LOCAL_MODEL_PATH: str = "./models/llama-2-70b.gguf"
+    LOCAL_MODEL_DEVICE: str = "cpu"  # Use CPU for local development
+    LOCAL_LLM_GPU_LAYERS: int = 0
     HF_TOKEN: Optional[str] = None
     
     # RAG Configuration
@@ -82,11 +82,14 @@ Please provide a detailed answer based on the context above. Include citations [
     ENABLE_STREAMING: bool = True
     ENABLE_CITATIONS: bool = True
     
-    # Search Service Integration
-    SEARCH_SERVICE_URL: str = "http://indexeur-semantique:8000"
+    # Search Service Integration - Use localhost for local development
+    SEARCH_SERVICE_URL: str = os.getenv("SEARCH_SERVICE_URL", "http://localhost:8003")
+    
+    # ML Predictor Integration
+    ML_PREDICTOR_SERVICE_URL: str = os.getenv("ML_PREDICTOR_SERVICE_URL", "http://localhost:8007")
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "*"]
     
     # Performance
     WORKERS: int = 4
@@ -98,3 +101,4 @@ Please provide a detailed answer based on the context above. Include citations [
 
 
 settings = Settings()
+

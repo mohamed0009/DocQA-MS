@@ -16,18 +16,18 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8007
     
-    # Database
-    DATABASE_URL: str = "postgresql://docqa_admin:changeme@postgres:5432/ml_predictor"
+    # Database - Using SQLite for local development
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./ml_predictor.db")
     
-    # RabbitMQ
-    RABBITMQ_HOST: str = "rabbitmq"
+    # RabbitMQ (optional for local dev)
+    RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "docqa_rabbitmq"
-    RABBITMQ_PASS: str = "changeme"
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASS: str = "guest"
     RABBITMQ_PREDICTION_QUEUE: str = "ml_predictions"
     
-    # Model Configuration
-    MODEL_PATH: str = "/app/trained_models"
+    # Model Configuration - Use relative path for local development
+    MODEL_PATH: str = os.getenv("MODEL_PATH", "./trained_models")
     READMISSION_MODEL_FILE: str = "readmission_model.pkl"
     PROGRESSION_MODEL_FILE: str = "progression_model.pkl"
     FEATURE_ENGINEER_FILE: str = "feature_engineer.pkl"
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     MAX_WORKERS: int = 4
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,*"
     
     # Monitoring
     ENABLE_METRICS: bool = True
@@ -84,3 +84,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

@@ -2,8 +2,7 @@
 Database models for IndexeurSémantique service
 """
 
-from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float, JSON
 from sqlalchemy.sql import func
 import uuid
 
@@ -15,10 +14,11 @@ class DocumentChunk(Base):
     
     __tablename__ = "document_chunks"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Document reference
-    document_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    document_id = Column(String(36), nullable=False, index=True)
     chunk_index = Column(Integer, nullable=False)
     
     # Content
@@ -45,7 +45,8 @@ class SearchLog(Base):
     
     __tablename__ = "search_logs"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Query
     query = Column(Text, nullable=False)
@@ -55,8 +56,8 @@ class SearchLog(Base):
     top_k = Column(Integer, nullable=False)
     similarity_threshold = Column(Float)
     
-    # Results
-    results = Column(JSONB, nullable=False)  # Array of {chunk_id, score, document_id}
+    # Results - Using JSON instead of JSONB for SQLite compatibility
+    results = Column(JSON, nullable=False)  # Array of {chunk_id, score, document_id}
     results_count = Column(Integer)
     
     # Performance
@@ -71,3 +72,4 @@ class SearchLog(Base):
     
     def __repr__(self):
         return f"<SearchLog {self.id}>"
+

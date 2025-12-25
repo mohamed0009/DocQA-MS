@@ -25,7 +25,7 @@ export const api = {
                 totalDocuments: docs.data.total || 0,
                 totalIndexed: search.data.total_documents || 0,
                 totalQueries: audit.data.total_events || 0, // Proxy for activity
-                processingSuccess: 98.5 // Hardcoded for now or calc from docs status
+                processingSuccess: 0 // TODO: Calculate from docs status
             };
         } catch (e) {
             console.error("Error fetching stats", e);
@@ -70,11 +70,12 @@ export const api = {
     },
 
     // --- Q&A ---
-    askQuestion: async (question: string, sessionId?: string) => {
+    askQuestion: async (question: string, sessionId?: string, filters?: any) => {
         const response = await axios.post(`${SERVICES.QA}/api/v1/qa/ask`, {
             question,
             session_id: sessionId,
-            include_sources: true
+            include_sources: true,
+            filters: filters
         });
         return response.data;
     },

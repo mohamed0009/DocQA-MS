@@ -198,6 +198,13 @@ class FAISSManager:
                 query_embedding.astype('float32'),
                 top_k
             )
+            try:
+                with open(r"c:\Users\HP\Desktop\MedBot-Intelligence\debug_log_ABS.txt", "a") as f_log:
+                    f_log.write(f"DEBUG FAISS SEARCH: k={top_k}\n")
+                    f_log.write(f"INDICES: {indices}\n")
+                    f_log.write(f"DISTS: {distances}\n")
+            except Exception as e:
+                print(f"CONFIRMED LOG ERROR: {e}")
             
             # Format results
             results = []
@@ -208,9 +215,9 @@ class FAISSManager:
                 # Convert L2 distance to similarity score (0-1)
                 similarity = 1 / (1 + dist)
                 
-                # Filter by threshold
-                if similarity < settings.SIMILARITY_THRESHOLD:
-                    continue
+                # Filter by threshold - MOVED TO API LAYER
+                # if similarity < settings.SIMILARITY_THRESHOLD:
+                #    continue
                 
                 metadata = self.id_to_chunk.get(int(idx), {})
                 

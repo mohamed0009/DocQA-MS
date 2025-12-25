@@ -80,20 +80,20 @@ export default function DashboardLayout({
                     }`}>
                     {/* Logo Section */}
                     <div className="flex h-20 items-center justify-between px-6 border-b border-gray-200 bg-white">
-                        <div className="flex items-center space-x-3">
-                            <div className="relative w-14 h-14 bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-2xl shadow-sm flex items-center justify-center p-2.5 border border-cyan-200">
+                        <div className="flex items-center space-x-2">
+                            <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center p-1">
                                 <Image
-                                    src="/logo.png"
-                                    alt="MedBot Logo"
+                                    src="/logo-v3.png"
+                                    alt="DocQA-MS Logo"
                                     fill
-                                    className="object-contain p-1"
+                                    className="object-contain p-0.5"
                                 />
                             </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900 leading-tight">
-                                    MedBot
+                            <div className="flex flex-col justify-center">
+                                <h1 className="text-xl font-extrabold text-teal-950 leading-none mb-0.5">
+                                    DocQA-MS
                                 </h1>
-                                <p className="text-[11px] text-cyan-600 font-semibold tracking-wide uppercase">Intelligence</p>
+                                <p className="text-[9px] text-teal-600 font-bold tracking-[0.2em] uppercase">Clinical Intelligence</p>
                             </div>
                         </div>
                         <button
@@ -142,20 +142,20 @@ export default function DashboardLayout({
                 <div className="flex flex-col flex-grow bg-white shadow-xl border-r border-gray-200">
                     {/* Logo Section - Updated Design */}
                     <div className="flex h-20 items-center px-6 border-b border-gray-200 bg-white">
-                        <div className="flex items-center space-x-3">
-                            <div className="relative w-14 h-14 bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-2xl shadow-sm flex items-center justify-center p-2.5 border border-cyan-200">
+                        <div className="flex items-center space-x-2">
+                            <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center p-1">
                                 <Image
-                                    src="/logo.png"
-                                    alt="MedBot Logo"
+                                    src="/logo-v3.png"
+                                    alt="DocQA-MS Logo"
                                     fill
-                                    className="object-contain p-1"
+                                    className="object-contain p-0.5"
                                 />
                             </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900 leading-tight">
-                                    MedBot
+                            <div className="flex flex-col justify-center">
+                                <h1 className="text-xl font-extrabold text-teal-950 leading-none mb-0.5">
+                                    DocQA-MS
                                 </h1>
-                                <p className="text-[11px] text-cyan-600 font-semibold tracking-wide uppercase">Intelligence</p>
+                                <p className="text-[9px] text-teal-600 font-bold tracking-[0.2em] uppercase">Clinical Intelligence</p>
                             </div>
                         </div>
                     </div>
@@ -225,10 +225,10 @@ export default function DashboardLayout({
                         onClick={() => setSidebarOpen(true)}
                         aria-label="Open sidebar"
                     >
-                        <div className="relative w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center p-1">
+                        <div className="relative w-8 h-8 rounded-lg flex items-center justify-center p-1">
                             <Image
                                 src="/logo.png"
-                                alt="MedBot Logo"
+                                alt="DocQA-MS Logo"
                                 fill
                                 className="object-contain p-0.5"
                             />

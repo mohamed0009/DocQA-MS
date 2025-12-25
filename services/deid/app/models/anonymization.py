@@ -2,8 +2,7 @@
 Database models for DeID service
 """
 
-from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float, JSON
 from sqlalchemy.sql import func
 import uuid
 
@@ -15,17 +14,19 @@ class AnonymizationLog(Base):
     
     __tablename__ = "anonymization_logs"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Document reference
-    document_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    document_id = Column(String(36), nullable=False, index=True)
     
     # Content
     original_content = Column(Text, nullable=False)
     anonymized_content = Column(Text, nullable=False)
     
     # PII entities detected (array of {type, text, start, end, confidence})
-    pii_entities = Column(JSONB, nullable=False)
+    # Using JSON instead of JSONB for SQLite compatibility
+    pii_entities = Column(JSON, nullable=False)
     
     # Configuration
     anonymization_strategy = Column(String(50), nullable=False)  # redact, replace, hash
@@ -40,3 +41,4 @@ class AnonymizationLog(Base):
     
     def __repr__(self):
         return f"<AnonymizationLog {self.id} ({self.anonymization_strategy})>"
+

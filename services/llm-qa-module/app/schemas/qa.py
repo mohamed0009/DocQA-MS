@@ -13,6 +13,7 @@ class QuestionRequest(BaseModel):
     session_id: Optional[UUID] = Field(None, description="Session ID for context")
     include_sources: Optional[bool] = Field(True, description="Include source citations")
     stream: Optional[bool] = Field(False, description="Stream response")
+    filters: Optional[Dict[str, Any]] = Field(None, description="Metadata filters (patient_id, date, type)")
 
 
 class Citation(BaseModel):

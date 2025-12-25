@@ -1,5 +1,5 @@
 {
-  "name": "interface-clinique",
+  "name": "docqa-ms-interface",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -28,6 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.9.11",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

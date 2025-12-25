@@ -108,7 +108,7 @@ class Anonymizer:
         
         return anonymized_text, metadata
     
-    def _hash(self, text: str, entities List[Dict[str, Any]]) -> tuple[str, Dict[str, Any]]:
+    def _hash(self, text: str, entities: List[Dict[str, Any]]) -> tuple[str, Dict[str, Any]]:
         """Replace entities with cryptographic hashes"""
         
         sorted_entities = sorted(entities, key=lambda x: x["start"], reverse=True)

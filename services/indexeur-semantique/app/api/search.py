@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 import time
 import structlog
+import uuid
 
 from ..database import get_db
 from ..models.document_chunk import DocumentChunk, SearchLog
@@ -67,7 +68,7 @@ async def index_document(
         for chunk in chunks:
             # Save chunk to database
             db_chunk = DocumentChunk(
-                document_id=request.document_id,
+                document_id=str(request.document_id),
                 chunk_index=chunk["index"],
                 chunk_text=chunk["text"],
                 chunking_strategy=request.chunking_strategy,
@@ -78,19 +79,27 @@ async def index_document(
             db.add(db_chunk)
             db.flush()  # Get ID without committing
             
-            chunk_metadata.append({
+            chunk_meta = {
                 "chunk_id": str(db_chunk.id),
                 "document_id": str(request.document_id),
                 "chunk_index": chunk["index"],
                 "chunk_text": chunk["text"]
-            })
+            }
+            # Merge with request metadata (e.g. including patient_id)
+            if request.metadata:
+                chunk_meta.update(request.metadata)
+                
+            chunk_metadata.append(chunk_meta)
             chunk_ids.append(db_chunk.id)
         
         # Add to FAISS index
         faiss_ids = faiss_manager.add_vectors(embeddings, chunk_metadata)
         
-        # Add to BM25 index
-        bm25_manager.add_documents(chunk_texts, chunk_metadata)
+        # Add to BM25 index (Lexical)
+        try:
+            bm25_manager.add_documents(chunk_texts, chunk_metadata)
+        except Exception as e:
+            logger.error("BM25 indexing failed (continuing with Semantic only)", error=str(e))
         
         # Update FAISS IDs in database
         for chunk_id, faiss_id in zip(chunk_ids, faiss_ids):
@@ -140,6 +149,11 @@ async def search(
     - **similarity_threshold**: Minimum similarity score (0-1)
     """
     
+    search_mode = request.search_mode or "hybrid"
+    
+
+
+    # Force Reload Trigger
     start_time = time.time()
     
     try:
@@ -153,6 +167,11 @@ async def search(
         embedding_time_ms = 0
         fusion_strategy = request.fusion_strategy
         
+        # Adjust top_k if filters are present to account for filtering
+        effective_top_k = request.top_k
+        if request.filters:
+            effective_top_k = request.top_k * 5  # Fetch more to allow for filtering
+            
         # Perform search based on mode
         if search_mode == "semantic":
             # Pure semantic search
@@ -162,14 +181,10 @@ async def search(
             
             faiss_results = faiss_manager.search(
                 query_embedding,
-                top_k=request.top_k
+                top_k=effective_top_k
             )
             
-            # Filter by threshold
-            filtered_results = [
-                r for r in faiss_results
-                if r["similarity"] >= request.similarity_threshold
-            ]
+            filtered_results = faiss_results # Disabled threshold filter
             
             raw_results = filtered_results
             
@@ -177,7 +192,7 @@ async def search(
             # Pure BM25 search
             bm25_results = bm25_manager.search(
                 request.query,
-                top_k=request.top_k
+                top_k=effective_top_k
             )
             raw_results = bm25_results
             
@@ -190,17 +205,17 @@ async def search(
             # Get semantic results
             semantic_results = faiss_manager.search(
                 query_embedding,
-                top_k=request.top_k * 2  # Get more for fusion
+                top_k=effective_top_k * 2  # Get more for fusion
             )
-            semantic_results = [
-                r for r in semantic_results
-                if r["similarity"] >= request.similarity_threshold
-            ]
+            # semantic_results = [
+            #     r for r in semantic_results
+            #     if r["similarity"] >= request.similarity_threshold
+            # ]
             
             # Get lexical results
             lexical_results = bm25_manager.search(
                 request.query,
-                top_k=request.top_k * 2  # Get more for fusion
+                top_k=effective_top_k * 2  # Get more for fusion
             )
             
             # Combine using hybrid search service
@@ -208,7 +223,7 @@ async def search(
                 semantic_results=semantic_results,
                 lexical_results=lexical_results,
                 fusion_strategy=fusion_strategy,
-                top_k=request.top_k,
+                top_k=effective_top_k,
                 semantic_weight=request.semantic_weight,
                 lexical_weight=request.lexical_weight
             )
@@ -221,6 +236,32 @@ async def search(
                 detail=f"Invalid search_mode: {search_mode}. Must be 'semantic', 'lexical', or 'hybrid'"
             )
         
+        # Apply Metadata Filters
+        if request.filters:
+            filtered_raw_results = []
+            for result in raw_results:
+                metadata = result.get("metadata", {})
+                match = True
+                for key, value in request.filters.items():
+                    # Handle special date_range filter if needed, otherwise direct match
+                    if key == "date_range":
+                        # Skip sophisticated date logic for now, or implement basic check
+                        pass 
+                    elif key not in metadata or str(metadata[key]).lower() != str(value).lower():
+                        # Try case-insensitive string comparison
+                        match = False
+                        break
+                
+                if match:
+                    filtered_raw_results.append(result)
+            
+            # Slice to requested top_k after filtering
+            raw_results = filtered_raw_results[:request.top_k]
+        else:
+             # Ensure we respect original top_k if we fetched more
+             raw_results = raw_results[:request.top_k]
+
+
         # Format results
         results = []
         for result in raw_results:

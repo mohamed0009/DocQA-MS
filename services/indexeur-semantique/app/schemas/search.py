@@ -33,6 +33,7 @@ class SearchRequest(BaseModel):
     fusion_strategy: Optional[str] = Field(None, description="Fusion strategy: rrf or weighted (for hybrid mode)")
     semantic_weight: Optional[float] = Field(None, description="Weight for semantic search (0-1)")
     lexical_weight: Optional[float] = Field(None, description="Weight for lexical search (0-1)")
+    filters: Optional[Dict[str, Any]] = Field(None, description="Metadata filters (patient_id, date_range, doc_type)")
 
 
 class SearchResult(BaseModel):

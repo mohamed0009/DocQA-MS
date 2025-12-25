@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 
 
 class Settings(BaseSettings):
@@ -10,19 +11,19 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = True
     
-    # Service URLs
-    doc_ingestor_url: str = "http://doc-ingestor:8001"
-    deid_url: str = "http://deid:8002"
-    indexeur_semantique_url: str = "http://indexeur-semantique:8003"
-    llm_qa_url: str = "http://llm-qa-module:8004"
-    synthese_comparative_url: str = "http://synthese-comparative:8005"
-    audit_logger_url: str = "http://audit-logger:8006"
+    # Service URLs - Use localhost for local development
+    doc_ingestor_url: str = os.getenv("DOC_INGESTOR_URL", "http://localhost:8001")
+    deid_url: str = os.getenv("DEID_URL", "http://localhost:8002")
+    indexeur_semantique_url: str = os.getenv("INDEXEUR_SEMANTIQUE_URL", "http://localhost:8003")
+    llm_qa_url: str = os.getenv("LLM_QA_URL", "http://localhost:8004")
+    synthese_comparative_url: str = os.getenv("SYNTHESE_COMPARATIVE_URL", "http://localhost:8005")
+    audit_logger_url: str = os.getenv("AUDIT_LOGGER_URL", "http://localhost:8006")
     
     # CORS
-    cors_origins: list = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: list = ["http://localhost:3000", "http://localhost:8000", "*"]
     
     # Security
-    secret_key: str = "your-secret-key-change-in-production"
+    secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
@@ -34,3 +35,4 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
+

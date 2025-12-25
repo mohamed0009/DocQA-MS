@@ -19,27 +19,33 @@ class RAGPipeline:
         self.llm = get_llm()
         self.search_url = f"{settings.SEARCH_SERVICE_URL}/api/v1/search/search"
     
-    async def retrieve_context(self, query: str) -> List[Dict[str, Any]]:
+    async def retrieve_context(self, query: str, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
-        Retrieve relevant document chunks for query
+        Retrieve relevant document chunks for query with optional filters
         
         Args:
             query: User question
+            filters: Optional metadata filters
             
         Returns:
             List of relevant chunks with metadata
         """
         try:
-            logger.info("Retrieving context", query=query)
+            logger.info("Retrieving context", query=query, filters=filters)
+            
+            payload = {
+                "query": query,
+                "top_k": settings.RETRIEVAL_TOP_K,
+                "similarity_threshold": settings.RETRIEVAL_MIN_SIMILARITY
+            }
+            
+            if filters:
+                payload["filters"] = filters
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     self.search_url,
-                    json={
-                        "query": query,
-                        "top_k": settings.RETRIEVAL_TOP_K,
-                        "similarity_threshold": settings.RETRIEVAL_MIN_SIMILARITY
-                    },
+                    json=payload,
                     timeout=30.0
                 )
                 
@@ -47,6 +53,8 @@ class RAGPipeline:
                 data = response.json()
                 
                 chunks = data.get("results", [])
+
+
                 
                 logger.info("Context retrieved", chunks_found=len(chunks))
                 
@@ -55,50 +63,39 @@ class RAGPipeline:
         except Exception as e:
             logger.error("Context retrieval failed", error=str(e))
             raise
-    
+
+    # ... (format_context and build_prompt unchanged)
+
+    # Re-adding missing methods
     def format_context(self, chunks: List[Dict[str, Any]]) -> str:
         """
         Format retrieved chunks into context string
-        
-        Args:
-            chunks: List of retrieved chunks
-            
-        Returns:
-            Formatted context string with source citations
         """
-        if not chunks:
-            return "No relevant context found."
-        
-        context_parts = []
-        
-        for idx, chunk in enumerate(chunks, 1):
-            text = chunk.get("chunk_text", "")
-            source_id = f"Source {idx}"
-            
-            context_parts.append(f"[{source_id}] {text}")
-        
-        return "\n\n".join(context_parts)
-    
+        context = ""
+        for i, chunk in enumerate(chunks):
+            context += f"[Source {i+1}] (Relevance: {chunk.get('similarity', 0):.2f})\n"
+            context += f"{chunk.get('chunk_text', '').strip()}\n\n"
+        return context
+
     def build_prompt(self, question: str, context: str) -> str:
         """
-        Build complete prompt for LLM
-        
-        Args:
-            question: User question
-            context: Retrieved context
-            
-        Returns:
-            Complete prompt string
+        Build prompt for LLM
         """
-        return settings.QUESTION_PROMPT_TEMPLATE.format(
-            context=context,
-            question=question
-        )
-    
+        return f"""Use the following medical context to answer the question.
+If the context doesn't contain the answer, say "I don't have enough information".
+Always cite sources using [Source X] notation.
+
+Context:
+{context}
+
+Question: {question}
+Answer:"""
+
     async def answer_question(
         self,
         question: str,
-        include_sources: bool = True
+        include_sources: bool = True,
+        filters: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
         Answer question using RAG pipeline
@@ -106,13 +103,48 @@ class RAGPipeline:
         Args:
             question: User question
             include_sources: Whether to include source citations
+            filters: Optional metadata filters
             
         Returns:
             Dict with answer, sources, and metadata
         """
         try:
             # 1. Retrieve relevant chunks
-            chunks = await self.retrieve_context(question)
+            chunks = await self.retrieve_context(question, filters)
+
+            # 2. ML Prediction Integration (EARLY INJECTION)
+            if filters and "patient_id" in filters:
+                try:
+                    patient_id = filters["patient_id"]
+                    prediction = await self._get_prediction(patient_id)
+                    if prediction:
+                        risk_level = prediction.get("risk_category", "unknown").upper()
+                        score = prediction.get("prediction", 0)
+                        factors = prediction.get("top_risk_factors", [])
+                        
+                        factor_text = ", ".join([f"{f['feature']} (contrib: {f['contribution']:.2f})" for f in factors[:3]])
+                        
+                        ml_context = (
+                            f"[ML PREDICTION REPORT]\n"
+                            f"Patient: {patient_id}\n"
+                            f"Readmission Risk: {risk_level} ({score:.1%})\n"
+                            f"Top Risk Factors: {factor_text}\n"
+                            f"Model Confidence: {prediction.get('confidence', 0):.1%}\n"
+                        )
+                        logger.info("ML Prediction fetched", patient_id=patient_id, risk=risk_level)
+                        
+                        # Add as a priority chunk
+                        chunks.insert(0, {
+                            "chunk_id": "cccccccc-cccc-cccc-cccc-cccccccccc01",
+                            "document_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            "chunk_text": ml_context,
+                            "similarity": 1.0,
+                            "metadata": {"type": "ml_report"}
+                        })
+                        
+                except Exception as e:
+                    print(f"CRITICAL ML ERROR: {e}")
+                    logger.warning("Failed to fetch ML prediction", error=str(e))
             
             if not chunks:
                 return {
@@ -125,16 +157,18 @@ class RAGPipeline:
             # 2. Format context
             context = self.format_context(chunks)
             
-            # 3. Build prompt
+            
+            # 7. Format context (now includes ML report)
+            context = self.format_context(chunks)
             prompt = self.build_prompt(question, context)
             
-            # 4. Generate answer
+            # 8. Generate answer
             llm_response = self.llm.generate(
                 prompt=prompt,
                 system_prompt=settings.SYSTEM_PROMPT
             )
             
-            # 5. Extract citations
+            # 9. Extract citations
             citations = self._extract_citations(
                 llm_response["response"],
                 chunks
@@ -161,6 +195,18 @@ class RAGPipeline:
         except Exception as e:
             logger.error("Question answering failed", error=str(e))
             raise
+    
+    async def _get_prediction(self, patient_id: str) -> Dict[str, Any]:
+        """
+        Get prediction from ML service
+        """
+        # Real patient features fetching needs to be implemented here.
+        # Previously relied on mock data which has been removed.
+        return None
+
+
+
+    # ... (rest of methods)
     
     def _extract_citations(
         self,

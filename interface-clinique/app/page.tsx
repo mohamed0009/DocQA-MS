@@ -27,6 +27,7 @@ export default function Home() {
     totalQueries: 0,
     processingSuccess: 0
   });
+  const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +37,11 @@ export default function Home() {
         setLoading(true);
         const data = await api.getStats();
         setStats(data);
+
+        // Fetch recent activity
+        const logs = await api.getAuditLogs(5);
+        setActivities(logs.events || []);
+
         setError(null);
       } catch (err) {
         setError('Failed to load statistics');
@@ -194,30 +200,21 @@ export default function Home() {
               </button>
             </div>
             <div className="space-y-3">
-              <AppointmentCard
-                doctorName="Patient PAT001 - Summary Generated"
-                specialty="Comprehensive medical summary created"
-                date="Today"
-                time="5 mins ago"
-                icon={CheckCircle}
-                color="green"
-              />
-              <AppointmentCard
-                doctorName="Document Processing Complete"
-                specialty="Lab_Results_2024.pdf indexed successfully"
-                date="Today"
-                time="12 mins ago"
-                icon={FileText}
-                color="teal"
-              />
-              <AppointmentCard
-                doctorName="AI Analysis Ready"
-                specialty="5 questions answered about diabetes management"
-                date="Today"
-                time="1 hour ago"
-                icon={MessageSquare}
-                color="blue"
-              />
+              {activities.length > 0 ? (
+                activities.slice(0, 3).map((log, i) => (
+                  <AppointmentCard
+                    key={i}
+                    doctorName={log.event_type}
+                    specialty={log.details ? String(JSON.stringify(log.details)).substring(0, 50) + "..." : "System Event"}
+                    date={new Date(log.timestamp).toLocaleDateString()}
+                    time={new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    icon={Activity}
+                    color="teal"
+                  />
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">No recent activity</div>
+              )}
             </div>
           </div>
         </div>
@@ -244,7 +241,7 @@ export default function Home() {
               <div className="text-xs text-gray-600">AI Queries</div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-2xl">
-              <div className="text-2xl font-bold text-orange-600 mb-1">1.8s</div>
+              <div className="text-2xl font-bold text-orange-600 mb-1">-</div>
               <div className="text-xs text-gray-600">Avg Response Time</div>
             </div>
           </div>

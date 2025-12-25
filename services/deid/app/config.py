@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "deid"
     LOG_LEVEL: str = "INFO"
     
-    # Database
-    DATABASE_URL: str = "postgresql://docqa_admin:changeme@postgres:5432/deid"
+    # Database - Using SQLite for local development
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./deid.db")
     
-    # RabbitMQ
-    RABBITMQ_HOST: str = "rabbitmq"
+    # RabbitMQ (optional for local dev)
+    RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "docqa_rabbitmq"
-    RABBITMQ_PASS: str = "changeme"
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASS: str = "guest"
     RABBITMQ_CONSUME_QUEUE: str = "document_processing"
     RABBITMQ_PUBLISH_QUEUE: str = "anonymized_documents"
     
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     ENABLE_SYNTHETIC_DATA: bool = True
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "*"]
     
     # Processing
     WORKERS: int = 4
@@ -74,3 +74,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

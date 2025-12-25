@@ -49,7 +49,8 @@ async def ask_question(
         retrieval_start = time.time()
         result = await rag.answer_question(
             question=request.question,
-            include_sources=request.include_sources
+            include_sources=request.include_sources,
+            filters=request.filters
         )
         retrieval_time_ms = int((time.time() - retrieval_start) * 1000)
         

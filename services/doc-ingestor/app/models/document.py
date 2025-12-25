@@ -2,8 +2,7 @@
 Database models for DocIngestor service
 """
 
-from sqlalchemy import Column, String, Integer, Text, TIMESTAMP
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, JSON
 from sqlalchemy.sql import func
 import uuid
 
@@ -15,7 +14,8 @@ class Document(Base):
     
     __tablename__ = "documents"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # File information
     filename = Column(String(255), nullable=False)
@@ -38,7 +38,8 @@ class Document(Base):
     
     # Extracted content
     extracted_text = Column(Text)
-    extracted_metadata = Column(JSONB)
+    # Using JSON instead of JSONB for SQLite compatibility
+    extracted_metadata = Column(JSON)
     
     # Audit fields
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), index=True)
@@ -47,3 +48,4 @@ class Document(Base):
     
     def __repr__(self):
         return f"<Document {self.filename} ({self.file_type})>"
+

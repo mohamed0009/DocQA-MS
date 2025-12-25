@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "indexeur-semantique"
     LOG_LEVEL: str = "INFO"
     
-    # Database
-    DATABASE_URL: str = "postgresql://docqa_admin:changeme@postgres:5432/indexeur"
+    # Database - Using SQLite for local development
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./indexeur.db")
     
-    # RabbitMQ
-    RABBITMQ_HOST: str = "rabbitmq"
+    # RabbitMQ (optional for local dev)
+    RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "docqa_rabbitmq"
-    RABBITMQ_PASS: str = "changeme"
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASS: str = "guest"
     RABBITMQ_CONSUME_QUEUE: str = "anonymized_documents"
     RABBITMQ_PUBLISH_QUEUE: str = "indexed_documents"
     
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # Ollama models:
     # "nomic-embed-text" (768 dim) - use with EMBEDDING_PROVIDER=ollama
     
-    EMBEDDING_DEVICE: str = "cuda"  # or "cpu" for CPU-only
+    EMBEDDING_DEVICE: str = "cpu"  # Use CPU for local development
     EMBEDDING_DIMENSION: int = 384  # Depends on model (384 for MiniLM, 768 for BiomedBERT)
     EMBEDDING_MAX_LENGTH: int = 512
     EMBEDDING_BATCH_SIZE: int = 32
@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     
     # FAISS Configuration
     FAISS_INDEX_TYPE: str = "IndexFlatL2"  # or IndexIVFFlat for large datasets
-    FAISS_INDEX_PATH: str = "/data/faiss_indices"
-    FAISS_USE_GPU: bool = True
+    FAISS_INDEX_PATH: str = os.getenv("FAISS_INDEX_PATH", "./data/faiss_indices")
+    FAISS_USE_GPU: bool = False  # Disabled for local dev
     FAISS_NLIST: int = 100  # For IVFFlat
     FAISS_NPROBE: int = 10  # Search parameter
     
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     ENABLE_HYBRID_SEARCH: bool = True
     
     # BM25 (Keyword Search) Configuration
-    BM25_INDEX_PATH: str = "/data/bm25_indices"
+    BM25_INDEX_PATH: str = os.getenv("BM25_INDEX_PATH", "./data/bm25_indices")
     BM25_K1: float = 1.5
     BM25_B: float = 0.75
     
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     WORKERS: int = 4
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "*"]
     
     class Config:
         env_file = ".env"
@@ -84,3 +84,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

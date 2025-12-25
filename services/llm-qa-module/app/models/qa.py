@@ -2,8 +2,7 @@
 Database models for LLM QA Module
 """
 
-from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Float, Boolean, JSON
 from sqlalchemy.sql import func
 import uuid
 
@@ -15,7 +14,8 @@ class QASession(Base):
     
     __tablename__ = "qa_sessions"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Session info
     user_id = Column(String(100), index=True)
@@ -38,24 +38,25 @@ class QAQuery(Base):
     
     __tablename__ = "qa_queries"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Using String for UUID to support both SQLite and PostgreSQL
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Session reference
-    session_id = Column(UUID(as_uuid=True), index=True)
+    session_id = Column(String(36), index=True)
     
     # Query
     question = Column(Text, nullable=False)
     
-    # Retrieved context
-    retrieved_chunks = Column(JSONB)  # Array of {chunk_id, document_id, similarity, text}
+    # Retrieved context - Using JSON instead of JSONB for SQLite compatibility
+    retrieved_chunks = Column(JSON)  # Array of {chunk_id, document_id, similarity, text}
     retrieval_count = Column(Integer)
     
     # LLM Response
     answer = Column(Text, nullable=False)
     llm_model = Column(String(100), nullable=False)
     
-    # Citations
-    citations = Column(JSONB)  # Array of {source_id, document_id, chunk_text}
+    # Citations - Using JSON instead of JSONB for SQLite compatibility
+    citations = Column(JSON)  # Array of {source_id, document_id, chunk_text}
     
     # Performance metrics
     retrieval_time_ms = Column(Integer)
@@ -76,3 +77,4 @@ class QAQuery(Base):
     
     def __repr__(self):
         return f"<QAQuery {self.id}>"
+

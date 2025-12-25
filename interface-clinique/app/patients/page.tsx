@@ -6,13 +6,8 @@ import { Users, Search, FileText, Activity, ChevronRight, Plus, Loader2 } from '
 import { api } from '../utils/api';
 
 export default function PatientsPage() {
-    // Mock patients for now, as we extract them from documents usually
-    const [patients, setPatients] = useState([
-        { id: 'PAT001', name: 'Sarah Connor', age: 45, gender: 'F', lastVisit: '2024-03-15', status: 'Critical', condition: 'Hypertension' },
-        { id: 'PAT002', name: 'John Doe', age: 32, gender: 'M', lastVisit: '2024-03-10', status: 'Stable', condition: 'Routine Checkup' },
-        { id: 'PAT003', name: 'Emily Blunt', age: 28, gender: 'F', lastVisit: '2024-02-28', status: 'Stable', condition: 'Migraine' },
-        { id: 'PAT004', name: 'Michael Scott', age: 54, gender: 'M', lastVisit: '2024-02-15', status: 'Warning', condition: 'Diabetes T2' },
-    ]);
+    // TODO: Implement backend endpoint to fetch unique patients from documents
+    const [patients, setPatients] = useState<any[]>([]);
 
     const [generatingId, setGeneratingId] = useState<string | null>(null);
 
