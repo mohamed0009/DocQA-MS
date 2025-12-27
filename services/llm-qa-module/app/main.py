@@ -44,7 +44,6 @@ async def lifespan(app: FastAPI):
     except ImportError:
         logger.warning("LLM module not found - running in standalone mode without LLM")
     except Exception as e:
-    except Exception as e:
         logger.warning("LLM initialization skipped", error=str(e))
     
     # Register with Eureka
