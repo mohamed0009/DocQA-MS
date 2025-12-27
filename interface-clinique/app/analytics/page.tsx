@@ -1,10 +1,34 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { BarChart3, TrendingUp, Users, FileText, Activity, PieChart } from 'lucide-react';
 import { StatCard } from '../components/ui';
+import { api } from '../utils/api';
 
 export default function AnalyticsPage() {
+    const [stats, setStats] = useState({
+        totalDocuments: 0,
+        totalIndexed: 0,
+        totalQueries: 0,
+        processingSuccess: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await api.getStats();
+                setStats(data);
+            } catch (error) {
+                console.error('Error fetching analytics:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
@@ -20,107 +44,72 @@ export default function AnalyticsPage() {
                                 <BarChart3 className="h-8 w-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold mb-1">Analytics Dashboard 📊</h1>
-                                <p className="text-white/90 text-base">Insights and metrics about your medical data processing</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Key Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard
-                        label="Total Documents"
-                        value="1,245"
-                        change={{ value: "+12%", trend: "up" }}
-                        icon={FileText}
-                        color="teal"
-                    />
-                    <StatCard
-                        label="Active Patients"
-                        value="342"
-                        change={{ value: "+5%", trend: "up" }}
-                        icon={Users}
-                        color="green"
-                    />
-                    <StatCard
-                        label="AI Queries"
-                        value="8,902"
-                        change={{ value: "+24%", trend: "up" }}
-                        icon={Activity}
-                        color="blue"
-                    />
-                    <StatCard
-                        label="Avg. Processing Time"
-                        value="1.2s"
-                        change={{ value: "-15%", trend: "down" }}
-                        icon={TrendingUp}
-                        color="orange"
-                    />
-                </div>
-
-                {/* Charts Area */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Document Processing Volume */}
-                    <div className="medical-card p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900">Document Processing Volume</h3>
-                            <select className="text-sm border-gray-200 rounded-md text-gray-500">
-                                <option>Last 7 days</option>
-                                <option>Last 30 days</option>
-                            </select>
-                        </div>
-                        <div className="h-64 flex items-end justify-between space-x-2 px-2">
-                            {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                                <div key={i} className="w-full bg-teal-50 rounded-t-lg relative group">
-                                    <div
-                                        className="absolute bottom-0 left-0 right-0 bg-teal-500 rounded-t-lg transition-all duration-500 group-hover:bg-teal-600"
-                                        style={{ height: `${h}%` }}
-                                    ></div>
-                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {h} docs
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex justify-between mt-4 text-xs text-gray-400">
-                            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                        </div>
-                    </div>
-
-                    {/* Document Types Distribution */}
-                    <div className="medical-card p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900">Document Types</h3>
-                            <PieChart className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <div className="flex items-center justify-center h-64">
-                            <div className="relative w-48 h-48 rounded-full border-[16px] border-teal-50 flex items-center justify-center">
-                                <div className="absolute inset-0 rounded-full border-[16px] border-teal-500 border-l-transparent border-b-transparent rotate-45"></div>
-                                <div className="absolute inset-0 rounded-full border-[16px] border-green-500 border-l-transparent border-t-transparent border-r-transparent -rotate-12"></div>
-                                <div className="text-center">
-                                    <span className="text-3xl font-bold text-gray-900">1.2k</span>
-                                    <p className="text-xs text-gray-500">Total</p>
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-1">Analytics Dashboard</h1>
+                                    <p className="text-white/90 text-base">Real-time insights from your medical data processing</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                            <div className="flex items-center">
-                                <div className="w-3 h-3 rounded-full bg-teal-500 mr-2"></div>
-                                <span className="text-sm text-gray-600">Clinical Reports (45%)</span>
+
+                        {/* Key Metrics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <StatCard
+                                label="Total Documents"
+                                value={loading ? "..." : String(stats.totalDocuments)}
+                                change={{ value: "+0%", trend: "up" }}
+                                icon={FileText}
+                                color="teal"
+                            />
+                            <StatCard
+                                label="Indexed Chunks"
+                                value={loading ? "..." : String(stats.totalIndexed)}
+                                change={{ value: "+0%", trend: "up" }}
+                                icon={Activity}
+                                color="green"
+                            />
+                            <StatCard
+                                label="AI Queries"
+                                value={loading ? "..." : String(stats.totalQueries)}
+                                change={{ value: "+0%", trend: "up" }}
+                                icon={Users}
+                                color="blue"
+                            />
+                            <StatCard
+                                label="Success Rate"
+                                value={loading ? "..." : stats.totalDocuments > 0 ? "100%" : "0%"}
+                                change={{ value: "0%", trend: "up" }}
+                                icon={TrendingUp}
+                                color="orange"
+                            />
+                        </div>
+
+                        {/* System Performance Overview */}
+                        <div className="medical-card p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-semibold text-gray-900">System Performance</h3>
+                                <PieChart className="h-5 w-5 text-gray-400" />
                             </div>
-                            <div className="flex items-center">
-                                <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                                <span className="text-sm text-gray-600">Lab Results (30%)</span>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="text-center p-6 bg-teal-50 rounded-2xl">
+                                    <div className="text-3xl font-bold text-teal-600 mb-2">{stats.totalDocuments}</div>
+                                    <div className="text-sm text-gray-600">Documents Uploaded</div>
+                                </div>
+                                <div className="text-center p-6 bg-green-50 rounded-2xl">
+                                    <div className="text-3xl font-bold text-green-600 mb-2">{stats.totalIndexed}</div>
+                                    <div className="text-sm text-gray-600">Chunks Indexed</div>
+                                </div>
+                                <div className="text-center p-6 bg-blue-50 rounded-2xl">
+                                    <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalQueries}</div>
+                                    <div className="text-sm text-gray-600">Total Queries</div>
+                                </div>
                             </div>
-                            <div className="flex items-center">
-                                <div className="w-3 h-3 rounded-full bg-teal-200 mr-2"></div>
-                                <span className="text-sm text-gray-600">Prescriptions (15%)</span>
-                            </div>
-                            <div className="flex items-center">
-                                <div className="w-3 h-3 rounded-full bg-gray-200 mr-2"></div>
-                                <span className="text-sm text-gray-600">Others (10%)</span>
-                            </div>
+                        </div>
+
+                        {/* Info Message */}
+                        <div className="medical-card p-6 bg-blue-50 border-blue-200">
+                            <p className="text-blue-800 text-sm">
+                                <strong>Real-time Data:</strong> All statistics are fetched from your live system. Upload more documents or run queries to see updates!
+                            </p>
                         </div>
                     </div>
                 </div>

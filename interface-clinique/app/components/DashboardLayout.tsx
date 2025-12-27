@@ -16,7 +16,8 @@ import {
     User,
     LogOut,
     Activity,
-    Clock
+    Clock,
+    GitCompare
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,6 +28,7 @@ const navigation = [
     { name: 'Documents', href: '/docs', icon: FileText },
     { name: 'Q&A Assistant', href: '/qa', icon: MessageSquare },
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Synthesis', href: '/synthesis', icon: GitCompare },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Patients', href: '/patients', icon: Users },
     { name: 'Audit Logs', href: '/audit', icon: Shield },

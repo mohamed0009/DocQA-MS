@@ -112,7 +112,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8002:8000"
-    volumes:
     depends_on:
       postgres:
         condition: service_healthy
@@ -205,7 +204,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8005:8000"
-    volumes:
     depends_on:
       - postgres
       - llm-qa-module

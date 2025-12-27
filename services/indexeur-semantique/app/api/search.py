@@ -379,3 +379,152 @@ async def delete_document(document_id: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Deletion failed: {str(e)}"
         )
+
+
+@router.get("/patients")
+async def get_patients(db: Session = Depends(get_db)):
+    """
+    Get unique patients from indexed documents
+    
+    Returns a list of patients with their metadata.
+    Currently returns mock data for demonstration.
+    """
+    
+    try:
+        # Mock patient data that matches the medical app context
+        mock_patients = [
+            {
+                "id": "PAT001",
+                "name": "Ahmed Benali",
+                "age": 45,
+                "gender": "Male",
+                "document_count": 8,
+                "metadata": {
+                    "patient_condition": "Diabetes Type 2",
+                    "patient_department": "Endocrinology",
+                    "last_visit": "2024-12-15"
+                }
+            },
+            {
+                "id": "PAT002",
+                "name": "Fatima Zahra",
+                "age": 32,
+                "gender": "Female",
+                "document_count": 5,
+                "metadata": {
+                    "patient_condition": "Hypertension",
+                    "patient_department": "Cardiology",
+                    "last_visit": "2024-12-20"
+                }
+            },
+            {
+                "id": "PAT003",
+                "name": "Mohammed Alami",
+                "age": 67,
+                "gender": "Male",
+                "document_count": 12,
+                "metadata": {
+                    "patient_condition": "Chronic Heart Failure",
+                    "patient_department": "Cardiology",
+                    "last_visit": "2024-12-18"
+                }
+            },
+            {
+                "id": "PAT004",
+                "name": "Sara Idrissi",
+                "age": 28,
+                "gender": "Female",
+                "document_count": 4,
+                "metadata": {
+                    "patient_condition": "Asthma",
+                    "patient_department": "Pulmonology",
+                    "last_visit": "2024-12-22"
+                }
+            },
+            {
+                "id": "PAT005",
+                "name": "Youssef Tahiri",
+                "age": 51,
+                "gender": "Male",
+                "document_count": 9,
+                "metadata": {
+                    "patient_condition": "Rheumatoid Arthritis",
+                    "patient_department": "Rheumatology",
+                    "last_visit": "2024-12-10"
+                }
+            },
+            {
+                "id": "PAT006",
+                "name": "Amina El Fassi",
+                "age": 39,
+                "gender": "Female",
+                "document_count": 6,
+                "metadata": {
+                    "patient_condition": "Migraine",
+                    "patient_department": "Neurology",
+                    "last_visit": "2024-12-19"
+                }
+            },
+            {
+                "id": "PAT007",
+                "name": "Karim Benjelloun",
+                "age": 54,
+                "gender": "Male",
+                "document_count": 7,
+                "metadata": {
+                    "patient_condition": "COPD",
+                    "patient_department": "Pulmonology",
+                    "last_visit": "2024-12-14"
+                }
+            },
+            {
+                "id": "PAT008",
+                "name": "Laila Tazi",
+                "age": 41,
+                "gender": "Female",
+                "document_count": 5,
+                "metadata": {
+                    "patient_condition": "Hypothyroidism",
+                    "patient_department": "Endocrinology",
+                    "last_visit": "2024-12-21"
+                }
+            },
+            {
+                "id": "PAT009",
+                "name": "Omar Chraibi",
+                "age": 62,
+                "gender": "Male",
+                "document_count": 10,
+                "metadata": {
+                    "patient_condition": "Prostate Cancer",
+                    "patient_department": "Oncology",
+                    "last_visit": "2024-12-12"
+                }
+            },
+            {
+                "id": "PAT010",
+                "name": "Zineb Alaoui",
+                "age": 35,
+                "gender": "Female",
+                "document_count": 3,
+                "metadata": {
+                    "patient_condition": "Anxiety Disorder",
+                    "patient_department": "Psychiatry",
+                    "last_visit": "2024-12-23"
+                }
+            }
+        ]
+        
+        logger.info("Patients retrieved (mock data)", count=len(mock_patients))
+        
+        return {
+            "patients": mock_patients,
+            "total": len(mock_patients)
+        }
+        
+    except Exception as e:
+        logger.error("Failed to retrieve patients", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve patients: {str(e)}"
+        )

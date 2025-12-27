@@ -63,6 +63,23 @@ services:
       - docqa-network
     restart: unless-stopped
 
+  eureka-server:
+    build:
+      context: ./services/eureka-server
+      dockerfile: Dockerfile
+    container_name: docqa-eureka
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
   # ===================================
   # Microservices
   # ===================================
@@ -73,6 +90,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-api-gateway
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=api-gateway
       - DOC_INGESTOR_URL=http://doc-ingestor:8000
       - DEID_URL=http://deid:8000
       - INDEXEUR_SEMANTIQUE_URL=http://indexeur-semantique:8000
@@ -84,10 +104,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8000:8000"
-    # volumes:
-      # - ./services/api-gateway/app:/app
+    volumes:
+      - ./services/shared:/app/shared:ro
     depends_on:
       postgres:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - docqa-network
@@ -99,6 +121,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-doc-ingestor
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=doc-ingestor
       - DATABASE_URL=${DOC_INGESTOR_DB_URL}
       - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
@@ -112,11 +137,14 @@ services:
       - "8001:8000"
     volumes:
       - document_storage:/data/documents
+      - ./services/shared:/app/shared:ro
       # - ./services/doc-ingestor/app:/app
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - docqa-network
@@ -128,6 +156,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-deid
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=deid
       - DATABASE_URL=${DEID_DB_URL}
       - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
@@ -143,11 +174,14 @@ services:
       - "8002:8000"
     volumes:
       - spacy_cache:/root/.spacy
+      - ./services/shared:/app/shared:ro
       # - ./services/deid/app:/app
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - docqa-network
@@ -159,6 +193,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-indexeur
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=indexeur-semantique
       - DATABASE_URL=${INDEXEUR_DB_URL}
       - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
       - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
@@ -178,11 +215,13 @@ services:
     volumes:
       - faiss_indices:/data/faiss_indices
       - embedding_cache:/root/.cache
-      # - ./services/indexeur-semantique/app:/app
+      - ./services/shared:/app/shared:ro
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - docqa-network
@@ -202,6 +241,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-llm-qa
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=llm-qa-module
       - DATABASE_URL=${LLM_QA_DB_URL}
       - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
@@ -218,6 +260,8 @@ services:
       - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-llama2:70b}
       - LOCAL_LLM_DEVICE=${LOCAL_LLM_DEVICE:-cuda}
       - ENABLE_STREAMING_RESPONSES=${ENABLE_STREAMING_RESPONSES:-true}
+      - ML_PREDICTOR_SERVICE_URL=${ML_PREDICTOR_SERVICE_URL:-http://ml-predictor:8000}
+      - SEARCH_SERVICE_URL=${SEARCH_SERVICE_URL:-http://indexeur-semantique:8000}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8004:8000"
@@ -226,9 +270,12 @@ services:
     volumes:
       - llm_cache:/root/.cache
       - llm_models:/models
+      - ./services/shared:/app/shared:ro
       # - ./services/llm-qa-module/app:/app
     depends_on:
       postgres:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - docqa-network
@@ -248,16 +295,21 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-synthese
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=synthese-comparative
       - DATABASE_URL=${SYNTHESE_DB_URL}
       - LLM_QA_SERVICE_URL=http://llm-qa-module:8000
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8005:8000"
-    # volumes:
+    volumes:
+      - ./services/shared:/app/shared:ro
     #   - ./services/synthese-comparative/app:/app
     depends_on:
       - postgres
       - llm-qa-module
+      - eureka-server
     networks:
       - docqa-network
     restart: unless-stopped
@@ -268,6 +320,9 @@ services:
       dockerfile: Dockerfile
     container_name: docqa-audit
     environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=audit-logger
       - DATABASE_URL=${AUDIT_DB_URL}
       - ENABLE_AUDIT_LOGGING=${ENABLE_AUDIT_LOGGING:-true}
       - AUDIT_RETENTION_DAYS=${AUDIT_RETENTION_DAYS:-3650}
@@ -277,9 +332,64 @@ services:
     volumes:
       # - ./services/audit-logger/app:/app
       - audit_logs:/data/logs
+      - ./services/shared:/app/shared:ro
     depends_on:
       postgres:
         condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  ml-predictor:
+    build:
+      context: ./services/ml-predictor
+      dockerfile: Dockerfile
+    container_name: docqa-ml-predictor
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - ENABLE_EUREKA=true
+      - INSTANCE_HOST=ml-predictor
+      - DATABASE_URL=${ML_PREDICTOR_DB_URL}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MODEL_PATH=/models
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8007:8000"
+    volumes:
+      - ml_models:/models
+      - ./services/shared:/app/shared:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./interface-clinique
+      dockerfile: Dockerfile
+    container_name: docqa-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - docqa-network
+    restart: unless-stopped
 
   # ===================================
   # Monitoring & Observability
@@ -358,4 +468,6 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  ml_models:
     driver: local

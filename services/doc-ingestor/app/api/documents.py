@@ -2,7 +2,7 @@
 API endpoints for document operations
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query, status
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import shutil
@@ -32,10 +32,10 @@ doc_processor = DocumentProcessor()
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
-    patient_id: Optional[str] = None,
-    document_type: Optional[str] = None,
-    author: Optional[str] = None,
-    department: Optional[str] = None,
+    patient_id: Optional[str] = Form(None),
+    document_type: Optional[str] = Form(None),
+    author: Optional[str] = Form(None),
+    department: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """

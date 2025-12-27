@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'docqa-services'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+        - 'api-gateway:8000'
+        - 'doc-ingestor:8000'
+        - 'deid:8000'
+        - 'indexeur-semantique:8000'
+        - 'llm-qa-module:8000'
+        - 'synthese-comparative:8000'
+        - 'audit-logger:8000'

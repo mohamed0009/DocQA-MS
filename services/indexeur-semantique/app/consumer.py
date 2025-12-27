@@ -8,11 +8,11 @@ import structlog
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
-from ..config import settings
-from ..database import SessionLocal
-from ..models.document_chunk import DocumentChunk
-from ..services import get_chunker, get_faiss_manager
-from ..embeddings import get_embedding_generator
+from .config import settings
+from .database import SessionLocal
+from .models.document_chunk import DocumentChunk
+from .services import get_chunker, get_faiss_manager
+from .embeddings import get_embedding_generator
 
 logger = structlog.get_logger()
 

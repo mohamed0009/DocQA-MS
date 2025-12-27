@@ -1,0 +1,5 @@
+﻿                                                                <p className="font-medium text-gray-700">
+                                                                    {source.source_id || source.document_id || Source }
+                                                                </p>
+                                                                <p className="text-gray-500 mt-1 line-clamp-2">
+                                                                    {(source.chunk_text || source.content || '').substring(0, 100)}...

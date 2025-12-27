@@ -1,0 +1,118 @@
+name: MedBot Intelligence CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ==================================================================================
+  # FRONTEND CI
+  # ==================================================================================
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./interface-clinique
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: interface-clinique/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint
+      run: npm run lint
+      # fail-fast is usually false for linting to see all errors, but npm run lint usually fails on error.
+
+    - name: Build
+      run: npm run build
+      env:
+        # Add any build-time env vars here if needed, or use dummy values for build validation
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+
+  # ==================================================================================
+  # MICROSERVICES (PYTHON) CI
+  # ==================================================================================
+  backend-services-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: 
+          - api-gateway
+          - audit-logger
+          - deid
+          - doc-ingestor
+          - indexeur-semantique
+          - llm-qa-module
+          - ml-predictor
+          - synthese-comparative
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f services/${{ matrix.service }}/requirements.txt ]; then pip install -r services/${{ matrix.service }}/requirements.txt; fi
+        pip install pytest flake8
+
+    - name: Lint with Flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 services/${{ matrix.service }} --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 services/${{ matrix.service }} --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Test with pytest
+      run: |
+        # We add the shared directory and the service directory to PYTHONPATH
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/services/shared:$(pwd)/services/${{ matrix.service }}
+        
+        # Run tests if the folder exists, otherwise just print a message
+        if [ -d "services/${{ matrix.service }}/tests" ] || ls services/${{ matrix.service }}/test_*.py 1> /dev/null 2>&1; then
+          pytest services/${{ matrix.service }}
+        else
+          echo "No tests found for ${{ matrix.service }}, skipping..."
+        fi
+      env:
+        # Mock environment variables that might be needed for imports
+        SECRET_KEY: "test-secret-key"
+        DATABASE_URL: "sqlite:///:memory:"
+
+  # ==================================================================================
+  # EUREKA SERVER (JAVA) CI
+  # ==================================================================================
+  eureka-server-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/eureka-server
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml

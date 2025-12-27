@@ -7,10 +7,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
+import sys
+import os
 
 from .database import engine, Base
 from .api import qa
 from .config import settings
+
+# Add shared module to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../shared'))
+
+try:
+    from eureka_client import EurekaServiceRegistry
+    EUREKA_AVAILABLE = True
+except ImportError:
+    EUREKA_AVAILABLE = False
+    structlog.get_logger().warning("Eureka client not available")
 
 # Configure logging
 logger = structlog.get_logger()
@@ -24,16 +36,43 @@ async def lifespan(app: FastAPI):
     # Create database tables
     Base.metadata.create_all(bind=engine)
     
-    # Initialize LLM (warm up)
-    from .llm import get_llm
+    # Initialize LLM (warm up) - Optional for standalone mode
     try:
+        from .llm import get_llm
         get_llm()
         logger.info("LLM initialized successfully")
+    except ImportError:
+        logger.warning("LLM module not found - running in standalone mode without LLM")
     except Exception as e:
-        logger.warning("LLM initialization failed", error=str(e))
+    except Exception as e:
+        logger.warning("LLM initialization skipped", error=str(e))
     
+    # Register with Eureka
+    eureka_registry = None
+    if EUREKA_AVAILABLE and settings.ENABLE_EUREKA:
+        try:
+            eureka_registry = EurekaServiceRegistry(
+                service_name="LLM-QA-MODULE",
+                service_port=8000,
+                eureka_server_url=settings.EUREKA_SERVER_URL,
+                instance_host=settings.INSTANCE_HOST
+            )
+            eureka_registry.register()
+            logger.info("✓ LLM QA Module registered with Eureka")
+        except Exception as e:
+            logger.error(f"Failed to register with Eureka: {e}")
+            
     logger.info("LLM QA Module started successfully")
     yield
+    
+    # Deregister from Eureka
+    if eureka_registry:
+        try:
+            eureka_registry.deregister()
+            logger.info("✓ LLM QA Module deregistered from Eureka")
+        except Exception as e:
+            logger.error(f"Error deregistering from Eureka: {e}")
+            
     logger.info("Shutting down LLM QA Module...")
 
 

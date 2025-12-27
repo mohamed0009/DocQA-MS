@@ -71,12 +71,14 @@ class PIIAnalyzer:
         """
         try:
             # Analyze with Presidio
+            print(f"DEBUG: calling self.analyzer.analyze with text len {len(text)}")
             results = self.analyzer.analyze(
                 text=text,
                 language=language,
                 entities=settings.PII_ENTITIES,
                 score_threshold=settings.DEID_CONFIDENCE_THRESHOLD
             )
+            print(f"DEBUG: analyzer returned {len(results)} results")
             
             # Convert to dict format
             entities = []
@@ -131,7 +133,9 @@ class PIIAnalyzer:
             List of medical entities
         """
         try:
+            print(f"DEBUG: calling self.nlp with text len {len(text)}")
             doc = self.nlp(text)
+            print(f"DEBUG: nlp returned doc with {len(doc.ents)} ents")
             
             medical_entities = []
             for ent in doc.ents:

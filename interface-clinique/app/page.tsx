@@ -6,18 +6,16 @@ import {
   FileText,
   CheckCircle,
   MessageSquare,
-  Clock,
   TrendingUp,
   Activity,
   Calendar,
-  Users,
   Stethoscope,
   Upload,
   Brain,
   FileBarChart
 } from 'lucide-react';
 import { api } from './utils/api';
-import { StatCard, Button, SkeletonCard } from './components/ui';
+import { StatCard, SkeletonCard } from './components/ui';
 import { ProgressModule, IconButton, AppointmentCard } from './components/ui/MedicalComponents';
 
 export default function Home() {
@@ -70,9 +68,9 @@ export default function Home() {
                     <Stethoscope className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold mb-1">Welcome back, Dr. Martinez! 👋</h1>
+                    <h1 className="text-3xl font-bold mb-1">MedBot Intelligence Dashboard</h1>
                     <p className="text-white/90 text-base">
-                      Your digital healthcare assistant is ready to help
+                      Advanced Medical Document Intelligence System
                     </p>
                   </div>
                 </div>
@@ -84,12 +82,8 @@ export default function Home() {
                     <span className="text-sm font-medium text-teal-900">System Online</span>
                   </div>
                   <div className="glass-medical rounded-xl px-4 py-2 flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-teal-900" />
-                    <span className="text-sm font-medium text-teal-900">Last sync: 2 mins ago</span>
-                  </div>
-                  <div className="glass-medical rounded-xl px-4 py-2 flex items-center space-x-2">
                     <TrendingUp className="h-4 w-4 text-teal-900" />
-                    <span className="text-sm font-medium text-teal-900">Performance: Excellent</span>
+                    <span className="text-sm font-medium text-teal-900">{stats.totalDocuments} Documents</span>
                   </div>
                 </div>
               </div>

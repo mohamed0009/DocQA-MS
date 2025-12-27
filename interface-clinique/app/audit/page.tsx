@@ -19,26 +19,18 @@ interface AuditLog {
 export default function AuditPage() {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [actionFilter, setActionFilter] = useState('All Actions');
+    const [dateFilter, setDateFilter] = useState('');
 
     const fetchLogs = async () => {
         setLoading(true);
         try {
             const data = await api.getAuditLogs();
-            if (data.logs && data.logs.length > 0) {
-                setLogs(data.logs);
-            } else {
-                // Fallback to mock if empty
-                throw new Error("Empty logs");
-            }
+            setLogs(data.logs || []);
         } catch (error) {
-            console.warn("Using Mock Audit Logs", error);
-            setLogs([
-                { id: 101, event_type: "SEARCH_QUERY", user_id: "dr.smith", resource_id: "PAT001", status: "Success", timestamp: new Date().toISOString(), ip_address: "10.0.0.12", details: "Query: 'diabetes diagnosis'" },
-                { id: 102, event_type: "DOCUMENT_ACCESS", user_id: "dr.smith", resource_id: "doc-a8f9-4b21", status: "Success", timestamp: new Date(Date.now() - 120000).toISOString(), ip_address: "10.0.0.12", details: "Viewed clinical note" },
-                { id: 103, event_type: "ML_PREDICTION", user_id: "system", resource_id: "PAT001", status: "Success", timestamp: new Date(Date.now() - 125000).toISOString(), ip_address: "10.0.0.5", details: "Readmission Risk: HIGH" },
-                { id: 104, event_type: "LOGIN", user_id: "dr.smith", resource_id: "session", status: "Success", timestamp: new Date(Date.now() - 3600000).toISOString(), ip_address: "10.0.0.12", details: "User login via dashboard" },
-                { id: 105, event_type: "EXPORT_DATA", user_id: "nurse.joy", resource_id: "report-daily", status: "Failed", timestamp: new Date(Date.now() - 7200000).toISOString(), ip_address: "10.0.0.15", details: "Permission denied" }
-            ]);
+            console.error('Error fetching audit logs:', error);
+            setLogs([]);
         } finally {
             setLoading(false);
         }
@@ -47,6 +39,21 @@ export default function AuditPage() {
     useEffect(() => {
         fetchLogs();
     }, []);
+
+    // Filter logs client-side for demo/simulated logic
+    const filteredLogs = logs.filter(log => {
+        const matchesSearch =
+            log.event_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            log.user_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            log.resource_id.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesAction = actionFilter === 'All Actions' || log.event_type.includes(actionFilter.toUpperCase()); // Simple check, expecting e.g. "LOGIN" in "USER_LOGIN"
+
+        const matchesDate = !dateFilter || log.timestamp.startsWith(dateFilter);
+
+        return matchesSearch && matchesAction && matchesDate;
+    });
 
     return (
         <DashboardLayout>
@@ -91,27 +98,41 @@ export default function AuditPage() {
                         <input
                             type="text"
                             placeholder="Search logs..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         />
                     </div>
                     <div className="flex items-center space-x-2">
                         <Filter className="h-5 w-5 text-gray-400" />
-                        <select className="border border-gray-200 rounded-lg px-3 py-2 text-gray-600 outline-none focus:border-blue-500">
+                        <select
+                            value={actionFilter}
+                            onChange={(e) => setActionFilter(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-3 py-2 text-gray-600 outline-none focus:border-blue-500"
+                        >
                             <option>All Actions</option>
-                            <option>Access</option>
-                            <option>Modification</option>
-                            <option>Login</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="UPLOAD">Upload</option>
+                            <option value="VIEW">View</option>
+                            <option value="SEARCH">Search</option>
+                            <option value="EXPORT">Export</option>
+                            <option value="ALERT">System Alert</option>
                         </select>
-                        <input type="date" className="border border-gray-200 rounded-lg px-3 py-2 text-gray-600 outline-none focus:border-blue-500" />
+                        <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-3 py-2 text-gray-600 outline-none focus:border-blue-500"
+                        />
                     </div>
                 </div>
 
                 {/* Logs Table */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    {logs.length === 0 && !loading ? (
+                    {filteredLogs.length === 0 && !loading ? (
                         <div className="p-12 text-center text-gray-500">
                             <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <p>No audit logs found</p>
+                            <p>No audit logs found matching your filters</p>
                         </div>
                     ) : (
                         <table className="min-w-full divide-y divide-gray-200">
@@ -126,12 +147,16 @@ export default function AuditPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {logs.map((log) => (
+                                {filteredLogs.map((log) => (
                                     <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {log.status === 'success' || log.status === 'Success' ? (
+                                            {log.status.toLowerCase() === 'success' ? (
                                                 <span className="flex items-center text-green-600 text-sm font-medium">
                                                     <CheckCircle className="h-4 w-4 mr-1" /> Success
+                                                </span>
+                                            ) : log.status.toLowerCase() === 'warning' ? (
+                                                <span className="flex items-center text-amber-500 text-sm font-medium">
+                                                    <AlertTriangle className="h-4 w-4 mr-1" /> Warning
                                                 </span>
                                             ) : (
                                                 <span className="flex items-center text-red-600 text-sm font-medium">
@@ -141,6 +166,7 @@ export default function AuditPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {log.event_type}
+                                            <div className="text-xs text-gray-400 font-normal mt-0.5">{log.details.substring(0, 30)}...</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <div className="flex items-center">

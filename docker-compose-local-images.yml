@@ -1,0 +1,367 @@
+version: '3.8'
+
+services:
+  # ===================================
+  # Infrastructure Services
+  # ===================================
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: docqa-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docqa_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-docqa_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docqa_admin}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: docqa-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-changeme}
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: docqa-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  # ===================================
+  # Microservices
+  # ===================================
+
+  api-gateway:
+    image: medbot-intelligence-api-gateway:latest
+    container_name: docqa-api-gateway
+    environment:
+      - DOC_INGESTOR_URL=http://doc-ingestor:8000
+      - DEID_URL=http://deid:8000
+      - INDEXEUR_SEMANTIQUE_URL=http://indexeur-semantique:8000
+      - LLM_QA_URL=http://llm-qa-module:8000
+      - SYNTHESE_COMPARATIVE_URL=http://synthese-comparative:8000
+      - AUDIT_LOGGER_URL=http://audit-logger:8000
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  doc-ingestor:
+    image: projetlchegar-doc-ingestor:latest
+    container_name: docqa-doc-ingestor
+    environment:
+      - DATABASE_URL=${DOC_INGESTOR_DB_URL}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - ENABLE_OCR=${ENABLE_OCR:-true}
+      - ENABLE_HL7_PARSING=${ENABLE_HL7_PARSING:-true}
+      - ENABLE_FHIR_PARSING=${ENABLE_FHIR_PARSING:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8000"
+    volumes:
+      - document_storage:/data/documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  deid:
+    image: projetlchegar-deid:latest
+    container_name: docqa-deid
+    environment:
+      - DATABASE_URL=${DEID_DB_URL}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - DEID_STRATEGY=${DEID_STRATEGY:-synthesize}
+      - DEID_CONFIDENCE_THRESHOLD=${DEID_CONFIDENCE_THRESHOLD:-0.85}
+      - PRESERVE_MEDICAL_ENTITIES=${PRESERVE_MEDICAL_ENTITIES:-true}
+      - SPACY_MODEL=${SPACY_MODEL:-en_core_web_lg}
+      - PRESIDIO_CONFIDENCE_THRESHOLD=${PRESIDIO_CONFIDENCE_THRESHOLD:-0.85}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8002:8000"
+    volumes:
+      - spacy_cache:/root/.spacy
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  indexeur-semantique:
+    image: projetlchegar-indexeur-semantique:latest
+    container_name: docqa-indexeur
+    environment:
+      - DATABASE_URL=${INDEXEUR_DB_URL}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-sentence-transformers}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      - EMBEDDING_DEVICE=${EMBEDDING_DEVICE:-cuda}
+      - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-384}
+      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-32}
+      - FAISS_INDEX_TYPE=${FAISS_INDEX_TYPE:-IndexFlatL2}
+      - FAISS_INDEX_PATH=${FAISS_INDEX_PATH:-/data/faiss_indices}
+      - FAISS_USE_GPU=${FAISS_USE_GPU:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8003:8000"
+    volumes:
+      - faiss_indices:/data/faiss_indices
+      - embedding_cache:/root/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  llm-qa-module:
+    image: projetlchegar-llm-qa-module:latest
+    container_name: docqa-llm-qa
+    environment:
+      - DATABASE_URL=${LLM_QA_DB_URL}
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.3}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-1024}
+      - LLM_CONTEXT_LENGTH=${LLM_CONTEXT_LENGTH:-4096}
+      - LLM_REQUEST_TIMEOUT=${LLM_REQUEST_TIMEOUT:-60}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4-turbo-preview}
+      - ENABLE_LLM_FALLBACK=${ENABLE_LLM_FALLBACK:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOCAL_LLM_MODEL_PATH=${LOCAL_LLM_MODEL_PATH:-/models/llama-2-70b.gguf}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-llama2:70b}
+      - LOCAL_LLM_DEVICE=${LOCAL_LLM_DEVICE:-cuda}
+      - ENABLE_STREAMING_RESPONSES=${ENABLE_STREAMING_RESPONSES:-true}
+      - ML_PREDICTOR_SERVICE_URL=${ML_PREDICTOR_SERVICE_URL:-http://ml-predictor:8000}
+      - SEARCH_SERVICE_URL=${SEARCH_SERVICE_URL:-http://indexeur-semantique:8000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8004:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - llm_cache:/root/.cache
+      - llm_models:/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  synthese-comparative:
+    image: projetlchegar-synthese-comparative:latest
+    container_name: docqa-synthese
+    environment:
+      - DATABASE_URL=${SYNTHESE_DB_URL}
+      - LLM_QA_SERVICE_URL=http://llm-qa-module:8000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8005:8000"
+    depends_on:
+      - postgres
+      - llm-qa-module
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  audit-logger:
+    image: projetlchegar-audit-logger:latest
+    container_name: docqa-audit
+    environment:
+      - DATABASE_URL=${AUDIT_DB_URL}
+      - ENABLE_AUDIT_LOGGING=${ENABLE_AUDIT_LOGGING:-true}
+      - AUDIT_RETENTION_DAYS=${AUDIT_RETENTION_DAYS:-3650}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8006:8000"
+    volumes:
+      - audit_logs:/data/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  ml-predictor:
+    image: medbot-intelligence-ml-predictor:latest
+    container_name: docqa-ml-predictor
+    environment:
+      - DATABASE_URL=${ML_PREDICTOR_DB_URL}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MODEL_PATH=/models
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER:-docqa_rabbitmq}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS:-changeme}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8007:8000"
+    volumes:
+      - ml_models:/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  frontend:
+    image: medbot-intelligence-frontend:latest
+    container_name: docqa-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  # ===================================
+  # Monitoring & Observability
+  # ===================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: docqa-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_DAYS:-15}d'
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: docqa-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - docqa-network
+    restart: unless-stopped
+
+# ===================================
+# Networks
+# ===================================
+
+networks:
+  docqa-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ===================================
+# Volumes
+# ===================================
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+  document_storage:
+    driver: local
+  faiss_indices:
+    driver: local
+  llm_models:
+    driver: local
+  llm_cache:
+    driver: local
+  embedding_cache:
+    driver: local
+  spacy_cache:
+    driver: local
+  audit_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  ml_models:
+    driver: local

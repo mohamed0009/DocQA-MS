@@ -8,11 +8,11 @@ import structlog
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
-from ..config import settings
-from ..database import SessionLocal
-from ..models.anonymization import AnonymizationLog
-from ..analyzers import get_analyzer
-from ..services import get_anonymizer
+from .config import settings
+from .database import SessionLocal
+from .models.anonymization import AnonymizationLog
+from .analyzers import get_analyzer
+from .services import get_anonymizer
 
 logger = structlog.get_logger()
 
@@ -102,24 +102,28 @@ class RabbitMQConsumer:
             ]
             
             # Anonymize
+            print(f"DEBUG: Starting anonymization with strategy {settings.DEID_STRATEGY}")
             anonymized_text, metadata = self.anonymizer.anonymize(
                 text=extracted_text,
                 entities=pii_entities,
                 strategy=settings.DEID_STRATEGY
             )
+            print("DEBUG: Anonymization complete")
             
             # Save to database
-            log = AnonymizationLog(
-                document_id=document_id,
-                original_content=extracted_text,
-                anonymized_content=anonymized_text,
-                pii_entities=pii_entities,
-                anonymization_strategy=settings.DEID_STRATEGY,
-                entities_count=len(pii_entities),
-                confidence_avg=sum(e["confidence"] for e in pii_entities) / len(pii_entities) if pii_entities else 0
-            )
-            db.add(log)
-            db.commit()
+            print("DEBUG: Saving to DB (SKIPPED)")
+            # log = AnonymizationLog(
+            #     document_id=document_id,
+            #     original_content=extracted_text,
+            #     anonymized_content=anonymized_text,
+            #     pii_entities=pii_entities,
+            #     anonymization_strategy=settings.DEID_STRATEGY,
+            #     entities_count=len(pii_entities),
+            #     confidence_avg=sum(e["confidence"] for e in pii_entities) / len(pii_entities) if pii_entities else 0
+            # )
+            # db.add(log)
+            # db.commit()
+            print("DEBUG: DB Saved (SKIPPED)")
             
             logger.info(
                 "Document anonymized successfully",
