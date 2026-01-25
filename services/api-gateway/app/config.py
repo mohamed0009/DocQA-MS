@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
+from typing import Any
 from functools import lru_cache
 import os
 
@@ -26,7 +28,16 @@ class Settings(BaseSettings):
     audit_logger_url: str = os.getenv("AUDIT_LOGGER_URL", "http://localhost:8006")
     
     # CORS
-    cors_origins: list = ["http://localhost:3000", "http://localhost:8000", "*"]
+    cors_origins: Any = ["http://localhost:3000", "http://localhost:8000", "*"]
+    
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
     
     # Security
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")

@@ -99,7 +99,7 @@ services:
       - LLM_QA_URL=http://llm-qa-module:8000
       - SYNTHESE_COMPARATIVE_URL=http://synthese-comparative:8000
       - AUDIT_LOGGER_URL=http://audit-logger:8000
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+      # - CORS_ORIGINS=["http://localhost:3000","http://localhost:8000"]
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
